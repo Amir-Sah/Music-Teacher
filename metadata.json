@@ -1,0 +1,6 @@
+{
+  "name": "Music Teacher Assistant",
+  "description": "A minimal, professional assistant for music teachers to manage students, groups, sessions, and generate monthly parent reports and educational game recommendations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
