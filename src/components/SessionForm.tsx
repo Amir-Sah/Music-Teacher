@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo } from "react";
 import { Session, Student, Group, Skill, MetricDefinition, SessionMetricValue } from "../types";
+import { v4 as uuidv4 } from "uuid";
 import { Save, X, Sparkles, Star, ClipboardList, Clock, Check } from "lucide-react";
 
 interface SessionFormProps {
@@ -147,7 +148,7 @@ export default function SessionForm({
     const metricsData: SessionMetricValue[] = metrics
       .filter((m) => type === "group" || m.target !== "group")
       .map((m) => ({
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         sessionId: editingSessionId || "", // will be filled correctly in useAppState
         metricId: m.id,
         value: metricValues[m.id] || 5, // default to 5 if somehow missing

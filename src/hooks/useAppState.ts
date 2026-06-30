@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
 import {
   AppState,
   Student,
@@ -135,7 +136,7 @@ export function useAppState(): UseAppStateReturn {
     } else {
       const newStudent: Student = {
         ...payload,
-        id: crypto.randomUUID(),
+        id: uuidv4(),
       };
       setAppState((prev) => ({
         ...prev,
@@ -160,7 +161,7 @@ export function useAppState(): UseAppStateReturn {
     } else {
       const newGroup: Group = {
         ...payload,
-        id: crypto.randomUUID(),
+        id: uuidv4(),
       };
       setAppState((prev) => ({
         ...prev,
@@ -208,7 +209,7 @@ export function useAppState(): UseAppStateReturn {
           (sn) => sn.sessionId !== sessionId
         );
         const newNotes: StudentSessionNote[] = studentNotes.map((noteItem) => ({
-          id: crypto.randomUUID(),
+          id: uuidv4(),
           sessionId,
           studentId: noteItem.studentId,
           note: noteItem.note,
@@ -229,7 +230,7 @@ export function useAppState(): UseAppStateReturn {
       }
 
       // Creating new session
-      const newSessionId = crypto.randomUUID();
+      const newSessionId = uuidv4();
       const newSession: Session = {
         ...sessionPayload,
         id: newSessionId,
@@ -246,7 +247,7 @@ export function useAppState(): UseAppStateReturn {
       }));
 
       const newNotes: StudentSessionNote[] = studentNotes.map((noteItem) => ({
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         sessionId: newSessionId,
         studentId: noteItem.studentId,
         note: noteItem.note,
@@ -270,7 +271,7 @@ export function useAppState(): UseAppStateReturn {
   const handleSaveReport = (payload: Omit<MonthlyReport, "id">) => {
     const newReport: MonthlyReport = {
       ...payload,
-      id: crypto.randomUUID(),
+      id: uuidv4(),
     };
     setAppState((prev) => ({
       ...prev,
@@ -291,7 +292,7 @@ export function useAppState(): UseAppStateReturn {
     selectedSkillIds: string[]
   ) => {
     const isEdit = !!gamePayload.id;
-    const gameId = gamePayload.id || crypto.randomUUID();
+    const gameId = gamePayload.id || uuidv4();
 
     const updatedGame: Game = {
       ...gamePayload,
@@ -327,7 +328,7 @@ export function useAppState(): UseAppStateReturn {
     metricPayload: Omit<MetricDefinition, "id"> & { id?: string }
   ) => {
     const isEdit = !!metricPayload.id;
-    const metricId = metricPayload.id || crypto.randomUUID();
+    const metricId = metricPayload.id || uuidv4();
 
     const updatedMetric: MetricDefinition = {
       ...metricPayload,
@@ -354,7 +355,7 @@ export function useAppState(): UseAppStateReturn {
   // --- Skill CRUD ---
   const handleSaveSkill = (skillPayload: Omit<Skill, "id"> & { id?: string }) => {
     const isEdit = !!skillPayload.id;
-    const skillId = skillPayload.id || crypto.randomUUID();
+    const skillId = skillPayload.id || uuidv4();
 
     const updatedSkill: Skill = {
       ...skillPayload,
