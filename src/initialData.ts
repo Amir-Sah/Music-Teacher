@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Skill, Game, GameSkill, Student, Group, Session, ClassMetrics, SessionSkill, StudentSessionNote, MonthlyReport, MetricDefinition, SessionMetricValue } from "./types";
+import { Skill, Game, GameSkill, Student, Group, Session, SessionSkill, StudentSessionNote, MonthlyReport, MetricDefinition, SessionMetricValue } from "./types";
 
 export const initialMetrics: MetricDefinition[] = [
   { id: "m-focus", name: "Focus Level", description: "How focused the student(s) were", target: "all" },
@@ -16,19 +16,22 @@ export const initialMetrics: MetricDefinition[] = [
 ];
 
 export const initialSessionMetrics: SessionMetricValue[] = [
-  { id: "sm-1", sessionId: "session-1", metricId: "m-focus", value: 4 },
-  { id: "sm-2", sessionId: "session-1", metricId: "m-engage", value: 5 },
-  { id: "sm-3", sessionId: "session-1", metricId: "m-coop", value: 5 },
-  { id: "sm-4", sessionId: "session-1", metricId: "m-eff", value: 4 },
-  { id: "sm-5", sessionId: "session-1", metricId: "m-time", value: 5 },
-  { id: "sm-6", sessionId: "session-1", metricId: "m-prog", value: 4 },
-  { id: "sm-7", sessionId: "session-2", metricId: "m-focus", value: 5 },
-  { id: "sm-8", sessionId: "session-2", metricId: "m-engage", value: 5 },
-  { id: "sm-9", sessionId: "session-2", metricId: "m-coop", value: 4 },
-  { id: "sm-10", sessionId: "session-2", metricId: "m-group", value: 4 },
-  { id: "sm-11", sessionId: "session-2", metricId: "m-eff", value: 5 },
-  { id: "sm-12", sessionId: "session-2", metricId: "m-time", value: 4 },
-  { id: "sm-13", sessionId: "session-2", metricId: "m-prog", value: 4 },
+  // ses-emily-1 metrics (from initialClassMetrics)
+  { id: "sm-1", sessionId: "ses-emily-1", metricId: "m-focus", value: 4 },
+  { id: "sm-2", sessionId: "ses-emily-1", metricId: "m-engage", value: 4 },
+  { id: "sm-3", sessionId: "ses-emily-1", metricId: "m-coop", value: 5 },
+  { id: "sm-4", sessionId: "ses-emily-1", metricId: "m-group", value: 4 },
+  { id: "sm-5", sessionId: "ses-emily-1", metricId: "m-eff", value: 5 },
+  { id: "sm-6", sessionId: "ses-emily-1", metricId: "m-time", value: 4 },
+  { id: "sm-7", sessionId: "ses-emily-1", metricId: "m-prog", value: 4 },
+  // ses-group-1 metrics (from initialClassMetrics)
+  { id: "sm-8", sessionId: "ses-group-1", metricId: "m-focus", value: 3 },
+  { id: "sm-9", sessionId: "ses-group-1", metricId: "m-engage", value: 3 },
+  { id: "sm-10", sessionId: "ses-group-1", metricId: "m-coop", value: 4 },
+  { id: "sm-11", sessionId: "ses-group-1", metricId: "m-group", value: 4 },
+  { id: "sm-12", sessionId: "ses-group-1", metricId: "m-eff", value: 4 },
+  { id: "sm-13", sessionId: "ses-group-1", metricId: "m-time", value: 3 },
+  { id: "sm-14", sessionId: "ses-group-1", metricId: "m-prog", value: 3 },
 ];
 
 export const initialSkills: Skill[] = [
@@ -188,29 +191,6 @@ export const initialSessions: Session[] = [
     teacherMistakes: "Did not have the sheet music pages bookmarked, wasted about 2 minutes looking for the primer.",
     teacherStrengths: "Using 'Tempo Freeze' game at the beginning got them both physically aligned and counting the pulse nicely.",
     privateNotes: "Might need to separate Lucas and Chloe if Lucas gets too distracted."
-  }
-];
-
-export const initialClassMetrics: ClassMetrics[] = [
-  {
-    sessionId: "ses-emily-1",
-    focusLevel: 4,
-    engagementLevel: 4,
-    cooperationLevel: 5,
-    groupDynamics: 4,
-    lessonPlanEfficiency: 5,
-    timeManagement: 4,
-    progressLevel: 4
-  },
-  {
-    sessionId: "ses-group-1",
-    focusLevel: 3,
-    engagementLevel: 3,
-    cooperationLevel: 4,
-    groupDynamics: 4,
-    lessonPlanEfficiency: 4,
-    timeManagement: 3,
-    progressLevel: 3
   }
 ];
 

@@ -36,17 +36,6 @@ export interface Session {
   privateNotes: string;
 }
 
-export interface ClassMetrics {
-  sessionId: string; // foreign key to Session.id
-  focusLevel: number; // 1-5
-  engagementLevel: number; // 1-5
-  cooperationLevel: number; // 1-5
-  groupDynamics: number; // 1-5
-  lessonPlanEfficiency: number; // 1-5
-  timeManagement: number; // 1-5
-  progressLevel: number; // 1-5
-}
-
 export interface Skill {
   id: string;
   name: string;
@@ -113,7 +102,6 @@ export interface AppState {
   students: Student[];
   groups: Group[];
   sessions: Session[];
-  classMetrics: ClassMetrics[]; // Legacy
   metrics: MetricDefinition[]; // New dynamic metrics
   sessionMetrics: SessionMetricValue[]; // New dynamic metric values
   skills: Skill[];
