@@ -4,7 +4,7 @@
  */
 
 import React, { useMemo } from "react";
-import { Student, Group, Session, Game, ClassMetrics } from "../types";
+import { Student, Group, Session, Game, SessionMetricValue } from "../types";
 import { 
   Users, Calendar, Clock, ChevronRight, 
   BookOpen, Star, ClipboardList
@@ -14,7 +14,7 @@ interface DashboardProps {
   students: Student[];
   groups: Group[];
   sessions: Session[];
-  classMetrics: ClassMetrics[];
+  sessionMetrics: SessionMetricValue[];
   games: Game[];
   onNavigateToTab: (tab: "students" | "groups" | "games" | "sessions") => void;
   onSelectStudent: (id: string) => void;
@@ -26,7 +26,7 @@ export default function Dashboard({
   students,
   groups,
   sessions,
-  classMetrics,
+  sessionMetrics,
   games,
   onNavigateToTab,
   onSelectStudent,
@@ -44,15 +44,18 @@ export default function Dashboard({
     return sessions.filter((s) => s.date.startsWith(currentMonthStr));
   }, [sessions, currentMonthStr]);
 
-  // Focus level average this month from ClassMetrics
+  // Focus level average this month from sessionMetrics
   const monthlyFocusAvg = useMemo(() => {
     const sessionIds = monthlySessions.map((s) => s.id);
-    const metricsForThisMonth = classMetrics.filter((m) => sessionIds.includes(m.sessionId));
+    // Find focus level metrics (id format usually is m-focus or similar, let's look for "focus" in id)
+    const metricsForThisMonth = sessionMetrics.filter((m) => 
+      sessionIds.includes(m.sessionId) && m.metricId.toLowerCase().includes("focus")
+    );
     
     if (metricsForThisMonth.length === 0) return 0;
-    const sum = metricsForThisMonth.reduce((acc, m) => acc + m.focusLevel, 0);
+    const sum = metricsForThisMonth.reduce((acc, m) => acc + m.value, 0);
     return parseFloat((sum / metricsForThisMonth.length).toFixed(1));
-  }, [monthlySessions, classMetrics]);
+  }, [monthlySessions, sessionMetrics]);
 
   // Last 3 sessions logged
   const recentSessions = useMemo(() => {
@@ -174,9 +177,9 @@ export default function Dashboard({
               <div className="space-y-3">
                 {recentSessions.map((session) => {
                   const target = getSessionTargetName(session);
-                  // Find related class metrics Focus rating
-                  const metrics = classMetrics.find((m) => m.sessionId === session.id);
-                  const focusVal = metrics ? metrics.focusLevel : 4;
+                  // Find related session metrics Focus rating
+                  const focusMetric = sessionMetrics.find((m) => m.sessionId === session.id && m.metricId.toLowerCase().includes("focus"));
+                  const focusVal = focusMetric ? focusMetric.value : 4;
 
                   return (
                     <div

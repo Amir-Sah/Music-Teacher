@@ -3,14 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from "react";
-import { AppState, Student, Group, Session, MonthlyReport, ClassMetrics, SessionSkill, StudentSessionNote, Game, Skill, MetricDefinition } from "./types";
-import { 
-  initialStudents, initialGroups, initialSessions, 
-  initialSkills, initialGames, initialGameSkills, initialMonthlyReports,
-  initialClassMetrics, initialSessionSkills, initialStudentSessionNotes,
-  initialMetrics, initialSessionMetrics
-} from "./initialData";
+import React from "react";
+import { useAppState } from "./hooks/useAppState";
+import { useNavigation } from "./hooks/useNavigation";
+import { Session, MonthlyReport, Student, Group, SessionMetricValue } from "./types";
 
 // Components
 import Dashboard from "./components/Dashboard";
@@ -31,428 +27,95 @@ import {
   LayoutDashboard, Users, GraduationCap, Compass, Database, Menu, X, Award, SlidersHorizontal, ClipboardList 
 } from "lucide-react";
 
-const STORAGE_KEY = "music_teacher_assistant_state_v2";
-
 export default function App() {
-  const [appState, setAppState] = useState<AppState>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // Safe check for backward compatibility
-        return {
-          ...parsed,
-          classMetrics: parsed.classMetrics || initialClassMetrics,
-          sessionSkills: parsed.sessionSkills || initialSessionSkills,
-          studentSessionNotes: parsed.studentSessionNotes || initialStudentSessionNotes,
-          metrics: parsed.metrics || initialMetrics,
-          sessionMetrics: parsed.sessionMetrics || initialSessionMetrics
-        };
-      }
-    } catch (e) {
-      console.error("Failed to load local state", e);
-    }
-    
-    // Default seed data
-    return {
-      students: initialStudents,
-      groups: initialGroups,
-      sessions: initialSessions,
-      monthlyReports: initialMonthlyReports,
-      skills: initialSkills,
-      games: initialGames,
-      gameSkills: initialGameSkills,
-      studentSkills: [],
-      classMetrics: initialClassMetrics,
-      sessionSkills: initialSessionSkills,
-      studentSessionNotes: initialStudentSessionNotes,
-      metrics: initialMetrics,
-      sessionMetrics: initialSessionMetrics
-    };
-  });
+  const {
+    appState,
+    handleSaveStudent,
+    handleDeleteStudent,
+    handleSaveGroup,
+    handleDeleteGroup,
+    handleSaveSession,
+    handleDeleteSession,
+    handleSaveReport,
+    handleDeleteReport,
+    handleSaveGame,
+    handleDeleteGame,
+    handleSaveMetric,
+    handleDeleteMetric,
+    handleSaveSkill,
+    handleDeleteSkill,
+    handleUpdateSkillLevelForStudent,
+    handleRestoreState,
+  } = useAppState();
 
-  // Persist state to local storage
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
-  }, [appState]);
+  const {
+    currentTab,
+    activeStudentId,
+    activeGroupId,
+    isMobileMenuOpen,
+    isAddingStudent,
+    editingStudent,
+    isAddingGroup,
+    editingGroup,
+    isLoggingSession,
+    editingSession,
+    preselectedLogStudentId,
+    preselectedLogGroupId,
+    isGeneratingReport,
+    preselectedReportStudentId,
+    handleNavigation,
+    setActiveStudentId,
+    setActiveGroupId,
+    setIsMobileMenuOpen,
+    setIsAddingStudent,
+    setEditingStudent,
+    setIsAddingGroup,
+    setEditingGroup,
+    setIsLoggingSession,
+    setEditingSession,
+    setPreselectedLogStudentId,
+    setPreselectedLogGroupId,
+    setIsGeneratingReport,
+    setPreselectedReportStudentId,
+    handleEditSession,
+    closeSessionForm,
+    closeReportForm,
+  } = useNavigation();
 
-  // Navigation State
-  const [currentTab, setCurrentTab] = useState<"dashboard" | "students" | "groups" | "games" | "skills" | "metrics" | "sessions" | "backup">("dashboard");
-  const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
-  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
-  
-  // Mobile navigation overlay toggle
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Form overlay triggers
-  const [isAddingStudent, setIsAddingStudent] = useState(false);
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [isAddingGroup, setIsAddingGroup] = useState(false);
-  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
-  const [isLoggingSession, setIsLoggingSession] = useState(false);
-  const [editingSession, setEditingSession] = useState<Session | null>(null);
-  const [preselectedLogStudentId, setPreselectedLogStudentId] = useState("");
-  const [preselectedLogGroupId, setPreselectedLogGroupId] = useState("");
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const [preselectedReportStudentId, setPreselectedReportStudentId] = useState("");
-
-  const handleNavigation = (tabId: "dashboard" | "students" | "groups" | "games" | "skills" | "metrics" | "sessions" | "backup") => {
-    setCurrentTab(tabId);
-    setActiveStudentId(null);
-    setActiveGroupId(null);
-    setIsMobileMenuOpen(false);
-    
-    // Reset all overlay states
-    setIsAddingStudent(false);
-    setEditingStudent(null);
-    setIsAddingGroup(false);
-    setEditingGroup(null);
-    setIsLoggingSession(false);
-    setEditingSession(null);
-    setPreselectedLogStudentId("");
-    setPreselectedLogGroupId("");
-    setIsGeneratingReport(false);
-    setPreselectedReportStudentId("");
-  };
-
-  const handleEditSession = (session: Session) => {
-    setEditingSession(session);
-    setIsLoggingSession(true);
-  };
-
-  // Restore whole database callback
-  const handleRestoreState = (newState: AppState) => {
-    setAppState(newState);
+  const handleSafeRestoreState = (newState: any) => {
+    handleRestoreState(newState);
     handleNavigation("dashboard");
   };
 
-  // --- Student CRUD Handlers ---
-  const handleSaveStudent = (payload: Omit<Student, "id"> & { id?: string }) => {
-    if (payload.id) {
-      // Editing
-      setAppState(prev => ({
-        ...prev,
-        students: prev.students.map(st => st.id === payload.id ? { ...st, ...payload } as Student : st)
-      }));
-    } else {
-      // Creation
-      const newStudent: Student = {
-        ...payload,
-        id: `std-${Date.now()}`
-      };
-      setAppState(prev => ({
-        ...prev,
-        students: [...prev.students, newStudent]
-      }));
-    }
+  // Wrapped save handlers that also close forms/modals
+  const handleSaveSessionWrapped = (
+    session: Omit<Session, "id">,
+    metrics: SessionMetricValue[],
+    selectedSkillIds: string[],
+    studentNotes: { studentId: string; note: string }[],
+    editingSessionId?: string
+  ) => {
+    handleSaveSession(session, metrics, selectedSkillIds, studentNotes, editingSessionId);
+    closeSessionForm();
+  };
+
+  const handleSaveReportWrapped = (
+    report: Omit<MonthlyReport, "id"> & { id?: string }
+  ) => {
+    handleSaveReport(report);
+    closeReportForm();
+  };
+
+  const handleSaveStudentWrapped = (student: Omit<Student, "id"> & { id?: string }) => {
+    handleSaveStudent(student);
     setIsAddingStudent(false);
     setEditingStudent(null);
   };
 
-  const handleDeleteStudent = (id: string) => {
-    setAppState(prev => ({
-      ...prev,
-      students: prev.students.filter(st => st.id !== id),
-      // Clean relationships to keep database integral
-      sessions: prev.sessions.filter(s => s.studentId !== id),
-      monthlyReports: prev.monthlyReports.filter(r => r.studentId !== id),
-      studentSkills: prev.studentSkills.filter(sk => sk.studentId !== id),
-      studentSessionNotes: (prev.studentSessionNotes || []).filter(sn => sn.studentId !== id)
-    }));
-    setActiveStudentId(null);
-  };
-
-  // --- Group CRUD Handlers ---
-  const handleSaveGroup = (payload: Omit<Group, "id"> & { id?: string }) => {
-    if (payload.id) {
-      setAppState(prev => ({
-        ...prev,
-        groups: prev.groups.map(g => g.id === payload.id ? { ...g, ...payload } as Group : g)
-      }));
-    } else {
-      const newGroup: Group = {
-        ...payload,
-        id: `grp-${Date.now()}`
-      };
-      setAppState(prev => ({
-        ...prev,
-        groups: [...prev.groups, newGroup]
-      }));
-    }
+  const handleSaveGroupWrapped = (group: Omit<Group, "id"> & { id?: string }) => {
+    handleSaveGroup(group);
     setIsAddingGroup(false);
     setEditingGroup(null);
-  };
-
-  const handleDeleteGroup = (id: string) => {
-    setAppState(prev => ({
-      ...prev,
-      groups: prev.groups.filter(g => g.id !== id),
-      // Detach students without deleting them
-      students: prev.students.map(st => st.groupId === id ? { ...st, groupId: undefined } : st),
-      // Clean group sessions
-      sessions: prev.sessions.filter(s => s.groupId !== id)
-    }));
-    setActiveGroupId(null);
-  };
-
-  // --- Relational Session CRUD Handlers ---
-  const handleSaveSession = (
-    sessionPayload: Omit<Session, "id">,
-    metricsPayload: Omit<ClassMetrics, "sessionId">,
-    selectedSkillIds: string[],
-    studentNotes: { studentId: string; note: string }[]
-  ) => {
-    if (editingSession) {
-      const sessionId = editingSession.id;
-
-      const updatedSession: Session = {
-        ...sessionPayload,
-        id: sessionId
-      };
-
-      const updatedMetrics: ClassMetrics = {
-        ...metricsPayload,
-        sessionId: sessionId
-      };
-
-      setAppState((prev) => {
-        const filteredSessionSkills = (prev.sessionSkills || []).filter((ss) => ss.sessionId !== sessionId);
-        const newSessionSkills: SessionSkill[] = selectedSkillIds.map((skId) => ({
-          sessionId: sessionId,
-          skillId: skId
-        }));
-
-        const filteredNotes = (prev.studentSessionNotes || []).filter((sn) => sn.sessionId !== sessionId);
-        const newNotes: StudentSessionNote[] = studentNotes.map((noteItem) => ({
-          id: `sn-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          sessionId: sessionId,
-          studentId: noteItem.studentId,
-          note: noteItem.note
-        }));
-
-        return {
-          ...prev,
-          sessions: prev.sessions.map((s) => s.id === sessionId ? updatedSession : s),
-          classMetrics: (prev.classMetrics || []).some((m) => m.sessionId === sessionId)
-            ? prev.classMetrics.map((m) => m.sessionId === sessionId ? updatedMetrics : m)
-            : [...(prev.classMetrics || []), updatedMetrics],
-          sessionSkills: [...filteredSessionSkills, ...newSessionSkills],
-          studentSessionNotes: [...filteredNotes, ...newNotes]
-        };
-      });
-
-      setEditingSession(null);
-    } else {
-      const newSessionId = `ses-${Date.now()}`;
-      const newSession: Session = {
-        ...sessionPayload,
-        id: newSessionId
-      };
-
-      const newMetrics: ClassMetrics = {
-        ...metricsPayload,
-        sessionId: newSessionId
-      };
-
-      const newSessionSkills: SessionSkill[] = selectedSkillIds.map((skId) => ({
-        sessionId: newSessionId,
-        skillId: skId
-      }));
-
-      const newNotes: StudentSessionNote[] = studentNotes.map((noteItem) => ({
-        id: `sn-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        sessionId: newSessionId,
-        studentId: noteItem.studentId,
-        note: noteItem.note
-      }));
-
-      setAppState((prev) => ({
-        ...prev,
-        sessions: [...prev.sessions, newSession],
-        classMetrics: [...(prev.classMetrics || []), newMetrics],
-        sessionSkills: [...(prev.sessionSkills || []), ...newSessionSkills],
-        studentSessionNotes: [...(prev.studentSessionNotes || []), ...newNotes]
-      }));
-    }
-
-    setIsLoggingSession(false);
-    setPreselectedLogStudentId("");
-    setPreselectedLogGroupId("");
-  };
-
-  const handleDeleteSession = (sessionId: string) => {
-    setAppState((prev) => ({
-      ...prev,
-      sessions: prev.sessions.filter((s) => s.id !== sessionId),
-      classMetrics: (prev.classMetrics || []).filter((m) => m.sessionId !== sessionId),
-      sessionSkills: (prev.sessionSkills || []).filter((ss) => ss.sessionId !== sessionId),
-      studentSessionNotes: (prev.studentSessionNotes || []).filter((sn) => sn.sessionId !== sessionId)
-    }));
-  };
-
-  // --- Monthly Report Handlers ---
-  const handleSaveReport = (payload: Omit<MonthlyReport, "id">) => {
-    const newReport: MonthlyReport = {
-      ...payload,
-      id: `rep-${Date.now()}`
-    };
-
-    setAppState(prev => ({
-      ...prev,
-      monthlyReports: [...prev.monthlyReports, newReport]
-    }));
-
-    setIsGeneratingReport(false);
-    setPreselectedReportStudentId("");
-  };
-
-  const handleDeleteReport = (reportId: string) => {
-    setAppState(prev => ({
-      ...prev,
-      monthlyReports: prev.monthlyReports.filter(r => r.id !== reportId)
-    }));
-  };
-
-  // --- Game CRUD Handlers ---
-  const handleSaveGame = (
-    gamePayload: Omit<Game, "id"> & { id?: string },
-    selectedSkillIds: string[]
-  ) => {
-    const isEdit = !!gamePayload.id;
-    const gameId = gamePayload.id || `gam-${Date.now()}`;
-
-    const updatedGame: Game = {
-      ...gamePayload,
-      id: gameId
-    } as Game;
-
-    setAppState((prev) => {
-      // 1. Update/Add game
-      const updatedGames = isEdit
-        ? prev.games.map((g) => (g.id === gameId ? updatedGame : g))
-        : [...prev.games, updatedGame];
-
-      // 2. Update linked skills
-      // First, remove old associations for this game
-      const filteredGameSkills = prev.gameSkills.filter((gs) => gs.gameId !== gameId);
-      // Then, add new associations
-      const newGameSkills = selectedSkillIds.map((skId) => ({
-        gameId,
-        skillId: skId
-      }));
-
-      return {
-        ...prev,
-        games: updatedGames,
-        gameSkills: [...filteredGameSkills, ...newGameSkills]
-      };
-    });
-  };
-
-  const handleDeleteGame = (id: string) => {
-    setAppState((prev) => ({
-      ...prev,
-      games: prev.games.filter((g) => g.id !== id),
-      gameSkills: prev.gameSkills.filter((gs) => gs.gameId !== id)
-    }));
-  };
-
-  // --- Metric CRUD Handlers ---
-  const handleSaveMetric = (
-    metricPayload: Omit<MetricDefinition, "id"> & { id?: string }
-  ) => {
-    const isEdit = !!metricPayload.id;
-    const metricId = metricPayload.id || `m-${Date.now()}`;
-
-    const updatedMetric: MetricDefinition = {
-      ...metricPayload,
-      id: metricId
-    } as MetricDefinition;
-
-    setAppState((prev) => {
-      const updatedMetrics = isEdit
-        ? prev.metrics.map((m) => (m.id === metricId ? updatedMetric : m))
-        : [...prev.metrics, updatedMetric];
-
-      return {
-        ...prev,
-        metrics: updatedMetrics
-      };
-    });
-  };
-
-  const handleDeleteMetric = (id: string) => {
-    setAppState((prev) => ({
-      ...prev,
-      metrics: prev.metrics.filter((m) => m.id !== id),
-      sessionMetrics: prev.sessionMetrics.filter((sm) => sm.metricId !== id)
-    }));
-  };
-
-  // --- Skill CRUD Handlers ---
-  const handleSaveSkill = (
-    skillPayload: Omit<Skill, "id"> & { id?: string }
-  ) => {
-    const isEdit = !!skillPayload.id;
-    const skillId = skillPayload.id || `skl-${Date.now()}`;
-
-    const updatedSkill: Skill = {
-      ...skillPayload,
-      id: skillId
-    } as Skill;
-
-    setAppState((prev) => {
-      const updatedSkills = isEdit
-        ? prev.skills.map((s) => (s.id === skillId ? updatedSkill : s))
-        : [...prev.skills, updatedSkill];
-
-      return {
-        ...prev,
-        skills: updatedSkills
-      };
-    });
-  };
-
-  const handleDeleteSkill = (id: string) => {
-    setAppState((prev) => ({
-      ...prev,
-      skills: prev.skills.filter((s) => s.id !== id),
-      // Clean up relationships
-      studentSkills: prev.studentSkills.filter((ss) => ss.skillId !== id),
-      gameSkills: prev.gameSkills.filter((gs) => gs.skillId !== id),
-      sessionSkills: (prev.sessionSkills || []).filter((sc) => sc.skillId !== id)
-    }));
-  };
-
-  // --- Student Skills Grid Handlers ---
-  const handleUpdateSkillLevel = (skillId: string, level: number) => {
-    if (!activeStudentId) return;
-
-    setAppState(prev => {
-      const matchIndex = prev.studentSkills.findIndex(
-        sk => sk.studentId === activeStudentId && sk.skillId === skillId
-      );
-
-      let updatedSkills = [...prev.studentSkills];
-
-      if (matchIndex > -1) {
-        updatedSkills[matchIndex] = {
-          ...updatedSkills[matchIndex],
-          currentLevel: level
-        };
-      } else {
-        updatedSkills.push({
-          studentId: activeStudentId,
-          skillId,
-          currentLevel: level
-        });
-      }
-
-      return {
-        ...prev,
-        studentSkills: updatedSkills
-      };
-    });
   };
 
   // Navigation router switch content
@@ -468,7 +131,7 @@ export default function App() {
             monthlyReports={appState.monthlyReports}
             skills={appState.skills}
             studentSkills={appState.studentSkills}
-            classMetrics={appState.classMetrics || []}
+            sessionMetrics={appState.sessionMetrics || []}
             sessionSkills={appState.sessionSkills || []}
             studentSessionNotes={appState.studentSessionNotes || []}
             onEditStudent={(st) => setEditingStudent(st)}
@@ -481,7 +144,9 @@ export default function App() {
               setPreselectedReportStudentId(activeStudent.id);
               setIsGeneratingReport(true);
             }}
-            onUpdateSkillLevel={handleUpdateSkillLevel}
+            onUpdateSkillLevel={(skillId, level) => {
+              handleUpdateSkillLevelForStudent(activeStudent.id, skillId, level);
+            }}
             onEditSession={handleEditSession}
             onDeleteSession={handleDeleteSession}
             onDeleteReport={handleDeleteReport}
@@ -499,7 +164,7 @@ export default function App() {
             groups={appState.groups}
             students={appState.students}
             sessions={appState.sessions}
-            classMetrics={appState.classMetrics || []}
+            sessionMetrics={appState.sessionMetrics || []}
             skills={appState.skills}
             sessionSkills={appState.sessionSkills || []}
             studentSessionNotes={appState.studentSessionNotes || []}
@@ -524,7 +189,7 @@ export default function App() {
             students={appState.students}
             groups={appState.groups}
             sessions={appState.sessions}
-            classMetrics={appState.classMetrics || []}
+            sessionMetrics={appState.sessionMetrics || []}
             games={appState.games}
             onNavigateToTab={(tab) => {
               handleNavigation(tab);
@@ -557,7 +222,7 @@ export default function App() {
             groups={appState.groups}
             students={appState.students}
             sessions={appState.sessions}
-            classMetrics={appState.classMetrics || []}
+            sessionMetrics={appState.sessionMetrics || []}
             skills={appState.skills}
             sessionSkills={appState.sessionSkills || []}
             studentSessionNotes={appState.studentSessionNotes || []}
@@ -624,7 +289,7 @@ export default function App() {
         return (
           <BackupExport
             appState={appState}
-            onRestoreState={handleRestoreState}
+            onRestoreState={handleSafeRestoreState}
           />
         );
       default:
@@ -746,19 +411,15 @@ export default function App() {
               students={appState.students}
               groups={appState.groups}
               skills={appState.skills}
+              metrics={appState.metrics}
               preselectedStudentId={preselectedLogStudentId}
               preselectedGroupId={preselectedLogGroupId}
               editingSession={editingSession || undefined}
-              editingMetrics={editingSession ? (appState.classMetrics || []).find(m => m.sessionId === editingSession.id) : undefined}
+              editingMetrics={editingSession ? (appState.sessionMetrics || []).filter(m => m.sessionId === editingSession.id) : undefined}
               editingSkillIds={editingSession ? (appState.sessionSkills || []).filter(ss => ss.sessionId === editingSession.id).map(ss => ss.skillId) : undefined}
               editingStudentNotes={editingSession ? (appState.studentSessionNotes || []).filter(sn => sn.sessionId === editingSession.id) : undefined}
-              onSave={handleSaveSession}
-              onCancel={() => {
-                setIsLoggingSession(false);
-                setPreselectedLogStudentId("");
-                setPreselectedLogGroupId("");
-                setEditingSession(null);
-              }}
+              onSave={handleSaveSessionWrapped}
+              onCancel={closeSessionForm}
             />
           </div>
         ) : isGeneratingReport ? (
@@ -767,15 +428,12 @@ export default function App() {
             <MonthlyReportForm
               students={appState.students}
               sessions={appState.sessions}
-              classMetrics={appState.classMetrics || []}
+              sessionMetrics={appState.sessionMetrics || []}
               studentSessionNotes={appState.studentSessionNotes || []}
               existingReports={appState.monthlyReports}
               preselectedStudentId={preselectedReportStudentId}
-              onSave={handleSaveReport}
-              onCancel={() => {
-                setIsGeneratingReport(false);
-                setPreselectedReportStudentId("");
-              }}
+              onSave={handleSaveReportWrapped}
+              onCancel={closeReportForm}
             />
           </div>
         ) : (
@@ -788,7 +446,7 @@ export default function App() {
       {isAddingStudent && (
         <StudentFormModal
           groups={appState.groups}
-          onSave={handleSaveStudent}
+          onSave={(student) => handleSaveStudentWrapped(student)}
           onClose={() => setIsAddingStudent(false)}
         />
       )}
@@ -797,14 +455,14 @@ export default function App() {
         <StudentFormModal
           student={editingStudent}
           groups={appState.groups}
-          onSave={handleSaveStudent}
+          onSave={(student) => handleSaveStudentWrapped({ ...student, id: editingStudent.id })}
           onClose={() => setEditingStudent(null)}
         />
       )}
 
       {isAddingGroup && (
         <GroupFormModal
-          onSave={handleSaveGroup}
+          onSave={(group) => handleSaveGroupWrapped(group)}
           onClose={() => setIsAddingGroup(false)}
         />
       )}
@@ -812,7 +470,7 @@ export default function App() {
       {editingGroup && (
         <GroupFormModal
           group={editingGroup}
-          onSave={handleSaveGroup}
+          onSave={(group) => handleSaveGroupWrapped({ ...group, id: editingGroup.id })}
           onClose={() => setEditingGroup(null)}
         />
       )}

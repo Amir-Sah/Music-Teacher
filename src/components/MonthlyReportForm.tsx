@@ -4,13 +4,13 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { Student, Session, ClassMetrics, StudentSessionNote, MonthlyReport } from "../types";
+import { Student, Session, SessionMetricValue, StudentSessionNote, MonthlyReport } from "../types";
 import { Calendar, RefreshCw, Check, ArrowLeft, Star, FileText } from "lucide-react";
 
 interface MonthlyReportFormProps {
   students: Student[];
   sessions: Session[];
-  classMetrics: ClassMetrics[];
+  sessionMetrics: SessionMetricValue[];
   studentSessionNotes: StudentSessionNote[];
   existingReports: MonthlyReport[];
   preselectedStudentId?: string;
@@ -21,7 +21,7 @@ interface MonthlyReportFormProps {
 export default function MonthlyReportForm({
   students,
   sessions,
-  classMetrics,
+  sessionMetrics,
   studentSessionNotes,
   existingReports,
   preselectedStudentId = "",
@@ -72,29 +72,20 @@ export default function MonthlyReportForm({
 
     // 1. Calculate Metrics Averages
     const sessionIds = studentSessions.map((s) => s.id);
-    const metricsList = classMetrics.filter((m) => sessionIds.includes(m.sessionId));
+    const metricsList = sessionMetrics.filter((m) => sessionIds.includes(m.sessionId));
     
-    let avgFocus = 0;
-    let avgEngagement = 0;
-    let avgProgress = 0;
-    let avgCooperation = 0;
+    const averageForMetric = (keyword: string) => {
+      const filtered = metricsList.filter((m) => m.metricId.toLowerCase().includes(keyword));
+      if (filtered.length === 0) return 4.0;
 
-    if (metricsList.length > 0) {
-      const focusSum = metricsList.reduce((sum, m) => sum + m.focusLevel, 0);
-      const engageSum = metricsList.reduce((sum, m) => sum + m.engagementLevel, 0);
-      const progressSum = metricsList.reduce((sum, m) => sum + m.progressLevel, 0);
-      const coopSum = metricsList.reduce((sum, m) => sum + m.cooperationLevel, 0);
+      const sum = filtered.reduce((acc, m) => acc + m.value, 0);
+      return parseFloat((sum / filtered.length).toFixed(1));
+    };
 
-      avgFocus = parseFloat((focusSum / metricsList.length).toFixed(1));
-      avgEngagement = parseFloat((engageSum / metricsList.length).toFixed(1));
-      avgProgress = parseFloat((progressSum / metricsList.length).toFixed(1));
-      avgCooperation = parseFloat((coopSum / metricsList.length).toFixed(1));
-    } else {
-      avgFocus = 4.0;
-      avgEngagement = 4.0;
-      avgProgress = 4.0;
-      avgCooperation = 4.0;
-    }
+    const avgFocus = averageForMetric("focus");
+    const avgEngagement = averageForMetric("engagement");
+    const avgProgress = averageForMetric("progress");
+    const avgCooperation = averageForMetric("cooperation");
 
     setTeacherNotes(
       `Average Focus: ${avgFocus}/5 • Engagement: ${avgEngagement}/5 • Cooperation: ${avgCooperation}/5 • Progress: ${avgProgress}/5\nExcellent work ethic. Highly receptive to feedback during class sessions.`

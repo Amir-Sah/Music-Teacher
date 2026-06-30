@@ -4,24 +4,26 @@
  */
 
 import React, { useState, useMemo } from "react";
-import { Session, Student, Group, Skill, ClassMetrics } from "../types";
+import { Session, Student, Group, Skill, MetricDefinition, SessionMetricValue } from "../types";
 import { Save, X, Sparkles, Star, ClipboardList, Clock, Check } from "lucide-react";
 
 interface SessionFormProps {
   students: Student[];
   groups: Group[];
   skills: Skill[];
+  metrics: MetricDefinition[];
   preselectedStudentId?: string;
   preselectedGroupId?: string;
   editingSession?: Session;
-  editingMetrics?: ClassMetrics;
+  editingMetrics?: SessionMetricValue[];
   editingSkillIds?: string[];
   editingStudentNotes?: { studentId: string; note: string }[];
   onSave: (
     session: Omit<Session, "id">,
-    metrics: Omit<ClassMetrics, "sessionId">,
+    metrics: SessionMetricValue[],
     selectedSkillIds: string[],
-    studentNotes: { studentId: string; note: string }[]
+    studentNotes: { studentId: string; note: string }[],
+    editingSessionId?: string
   ) => void;
   onCancel: () => void;
 }
@@ -30,6 +32,7 @@ export default function SessionForm({
   students,
   groups,
   skills,
+  metrics,
   preselectedStudentId = "",
   preselectedGroupId = "",
   editingSession,
@@ -39,6 +42,7 @@ export default function SessionForm({
   onSave,
   onCancel
 }: SessionFormProps) {
+  const editingSessionId = editingSession?.id;
   const [type, setType] = useState<"private" | "group">(
     editingSession ? (editingSession.groupId ? "group" : "private") : (preselectedGroupId ? "group" : "private")
   );
@@ -54,14 +58,24 @@ export default function SessionForm({
   const [teacherStrengths, setTeacherStrengths] = useState(editingSession?.teacherStrengths || "");
   const [privateNotes, setPrivateNotes] = useState(editingSession?.privateNotes || "");
 
-  // Class Metrics States (1-5)
-  const [focusLevel, setFocusLevel] = useState(editingMetrics?.focusLevel ?? 4);
-  const [engagementLevel, setEngagementLevel] = useState(editingMetrics?.engagementLevel ?? 4);
-  const [cooperationLevel, setCooperationLevel] = useState(editingMetrics?.cooperationLevel ?? 4);
-  const [groupDynamics, setGroupDynamics] = useState(editingMetrics?.groupDynamics ?? 4);
-  const [lessonPlanEfficiency, setLessonPlanEfficiency] = useState(editingMetrics?.lessonPlanEfficiency ?? 4);
-  const [timeManagement, setTimeManagement] = useState(editingMetrics?.timeManagement ?? 4);
-  const [progressLevel, setProgressLevel] = useState(editingMetrics?.progressLevel ?? 3);
+  // Metric States (1-5)
+  const [metricValues, setMetricValues] = useState<Record<string, number>>(() => {
+    const initial: Record<string, number> = {};
+    if (editingMetrics && editingMetrics.length > 0) {
+      editingMetrics.forEach((m) => {
+        initial[m.metricId] = m.value;
+      });
+    } else {
+      metrics.forEach((m) => {
+        initial[m.id] = m.id.includes("prog") ? 3 : 4; // default values
+      });
+    }
+    return initial;
+  });
+
+  const handleMetricChange = (metricId: string, val: number) => {
+    setMetricValues((prev) => ({ ...prev, [metricId]: val }));
+  };
 
   // Selected Skills checklist state
   const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>(editingSkillIds || []);
@@ -130,15 +144,14 @@ export default function SessionForm({
       privateNotes: privateNotes.trim()
     };
 
-    const metricsData: Omit<ClassMetrics, "sessionId"> = {
-      focusLevel,
-      engagementLevel,
-      cooperationLevel,
-      groupDynamics: type === "group" ? groupDynamics : 5, // default to 5 for private
-      lessonPlanEfficiency,
-      timeManagement,
-      progressLevel
-    };
+    const metricsData: SessionMetricValue[] = metrics
+      .filter((m) => type === "group" || m.target !== "group")
+      .map((m) => ({
+        id: crypto.randomUUID(),
+        sessionId: editingSessionId || "", // will be filled correctly in useAppState
+        metricId: m.id,
+        value: metricValues[m.id] || 5, // default to 5 if somehow missing
+      }));
 
     // Format individual student notes array
     const studentNotesArray = activeStudents
@@ -148,7 +161,7 @@ export default function SessionForm({
       }))
       .filter((n) => n.note.length > 0);
 
-    onSave(sessionData, metricsData, selectedSkillIds, studentNotesArray);
+    onSave(sessionData, metricsData, selectedSkillIds, studentNotesArray, editingSessionId);
   };
 
   const RatingSelector = ({
@@ -388,15 +401,16 @@ export default function SessionForm({
           Class Quality & Metrics Evaluation
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <RatingSelector value={focusLevel} onChange={setFocusLevel} label="Focus Level" />
-          <RatingSelector value={engagementLevel} onChange={setEngagementLevel} label="Engagement Level" />
-          <RatingSelector value={cooperationLevel} onChange={setCooperationLevel} label="Cooperation Level" />
-          {type === "group" && (
-            <RatingSelector value={groupDynamics} onChange={setGroupDynamics} label="Group Dynamics" />
-          )}
-          <RatingSelector value={lessonPlanEfficiency} onChange={setLessonPlanEfficiency} label="Lesson Plan Efficiency" />
-          <RatingSelector value={timeManagement} onChange={setTimeManagement} label="Time Management" />
-          <RatingSelector value={progressLevel} onChange={setProgressLevel} label="Overall Progress" />
+          {metrics
+            .filter((m) => type === "group" || m.target !== "group")
+            .map((m) => (
+              <RatingSelector
+                key={m.id}
+                value={metricValues[m.id] || 4}
+                onChange={(val) => handleMetricChange(m.id, val)}
+                label={m.name}
+              />
+            ))}
         </div>
       </div>
 

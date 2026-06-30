@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo } from "react";
-import { Student, Session, MonthlyReport, Skill, StudentSkill, Group, ClassMetrics, SessionSkill, StudentSessionNote } from "../types";
+import { Student, Session, MonthlyReport, Skill, StudentSkill, Group, SessionMetricValue, SessionSkill, StudentSessionNote } from "../types";
 import { 
   User, Calendar, Clock, BookOpen, Star, Sparkles, Smile, MessageSquare, 
   Trash2, Edit, Copy, Check, Printer, Plus, Award, ChevronDown, ChevronUp, FileText, Phone, Users
@@ -17,7 +17,7 @@ interface StudentDetailProps {
   monthlyReports: MonthlyReport[];
   skills: Skill[];
   studentSkills: StudentSkill[];
-  classMetrics: ClassMetrics[];
+  sessionMetrics: SessionMetricValue[];
   sessionSkills: SessionSkill[];
   studentSessionNotes: StudentSessionNote[];
   onEditStudent: (student: Student) => void;
@@ -38,7 +38,7 @@ export default function StudentDetail({
   monthlyReports,
   skills,
   studentSkills,
-  classMetrics,
+  sessionMetrics,
   sessionSkills,
   studentSessionNotes,
   onEditStudent,
@@ -274,8 +274,8 @@ Thank you for supporting your child's musical journey! Let me know if you have a
           {studentSessions.length > 0 ? (
             studentSessions.map((session) => {
               const isExpanded = expandedSessionId === session.id;
-              // Class metrics
-              const metrics = classMetrics.find((m) => m.sessionId === session.id);
+              // Session metrics
+              const metrics = sessionMetrics.filter((m) => m.sessionId === session.id);
               // Practiced skills mapping
               const linkedSkillIds = sessionSkills.filter((ss) => ss.sessionId === session.id).map((ss) => ss.skillId);
               const practicedSkills = skills.filter((sk) => linkedSkillIds.includes(sk.id));
@@ -317,20 +317,16 @@ Thank you for supporting your child's musical journey! Let me know if you have a
 
                     <div className="flex items-center gap-4">
                       {/* Ratings preview */}
-                      {metrics && (
+                      {metrics.length > 0 && (
                         <div className="hidden sm:flex items-center gap-3">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-slate-400 font-bold uppercase">Focus</span>
-                            <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-800 text-[10px] font-bold rounded">
-                              {metrics.focusLevel}/5
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-slate-400 font-bold uppercase">Progress</span>
-                            <span className="px-2 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold rounded">
-                              {metrics.progressLevel}/5
-                            </span>
-                          </div>
+                          {metrics.slice(0, 2).map((m) => (
+                            <div key={m.metricId} className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-slate-400 font-bold uppercase">{m.metricId.replace("m-", "").replace(/-/g, " ")}</span>
+                              <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-800 text-[10px] font-bold rounded">
+                                {m.value}/5
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       )}
 
@@ -348,40 +344,16 @@ Thank you for supporting your child's musical journey! Let me know if you have a
                   {isExpanded && (
                     <div className="p-5 border-t border-slate-150 bg-slate-50/30 space-y-5 text-xs sm:text-sm animate-fade-in">
                       {/* Grid metrics */}
-                      {metrics && (
+                      {metrics.length > 0 && (
                         <div>
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-2">Class Performance Metrics</span>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded border border-slate-200">
-                            <div>
-                              <span className="text-[9px] font-bold uppercase text-slate-400 block">Focus Level</span>
-                              <span className="block font-bold text-slate-800 text-sm mt-0.5">{metrics.focusLevel} / 5</span>
-                            </div>
-                            <div>
-                              <span className="text-[9px] font-bold uppercase text-slate-400 block">Engagement Level</span>
-                              <span className="block font-bold text-slate-800 text-sm mt-0.5">{metrics.engagementLevel} / 5</span>
-                            </div>
-                            <div>
-                              <span className="text-[9px] font-bold uppercase text-slate-400 block">Cooperation Level</span>
-                              <span className="block font-bold text-slate-800 text-sm mt-0.5">{metrics.cooperationLevel} / 5</span>
-                            </div>
-                            <div>
-                              <span className="text-[9px] font-bold uppercase text-slate-400 block">Overall Progress</span>
-                              <span className="block font-bold text-slate-800 text-sm mt-0.5">{metrics.progressLevel} / 5</span>
-                            </div>
-                            {session.groupId && (
-                              <div>
-                                <span className="text-[9px] font-bold uppercase text-slate-400 block">Group Dynamics</span>
-                                <span className="block font-bold text-slate-800 text-sm mt-0.5">{metrics.groupDynamics} / 5</span>
+                            {metrics.map((m) => (
+                              <div key={m.metricId}>
+                                <span className="text-[9px] font-bold uppercase text-slate-400 block">{m.metricId.replace("m-", "").replace(/-/g, " ")}</span>
+                                <span className="block font-bold text-slate-800 text-sm mt-0.5">{m.value} / 5</span>
                               </div>
-                            )}
-                            <div>
-                              <span className="text-[9px] font-bold uppercase text-slate-400 block">Lesson Efficiency</span>
-                              <span className="block font-bold text-slate-800 text-sm mt-0.5">{metrics.lessonPlanEfficiency} / 5</span>
-                            </div>
-                            <div>
-                              <span className="text-[9px] font-bold uppercase text-slate-400 block">Time Management</span>
-                              <span className="block font-bold text-slate-800 text-sm mt-0.5">{metrics.timeManagement} / 5</span>
-                            </div>
+                            ))}
                           </div>
                         </div>
                       )}

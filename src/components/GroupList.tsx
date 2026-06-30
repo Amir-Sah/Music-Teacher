@@ -4,14 +4,14 @@
  */
 
 import React, { useState, useMemo } from "react";
-import { Group, Student, Session, ClassMetrics, Skill, SessionSkill, StudentSessionNote } from "../types";
+import { Group, Student, Session, SessionMetricValue, Skill, SessionSkill, StudentSessionNote } from "../types";
 import { Users, Plus, Edit2, Trash2, Calendar, BookOpen, PlusCircle, ClipboardList, MapPin, Clock, Star, Sparkles, Smile } from "lucide-react";
 
 interface GroupListProps {
   groups: Group[];
   students: Student[];
   sessions: Session[];
-  classMetrics: ClassMetrics[];
+  sessionMetrics: SessionMetricValue[];
   skills: Skill[];
   sessionSkills: SessionSkill[];
   studentSessionNotes: StudentSessionNote[];
@@ -27,7 +27,7 @@ export default function GroupList({
   groups,
   students,
   sessions,
-  classMetrics,
+  sessionMetrics,
   skills,
   sessionSkills,
   studentSessionNotes,
@@ -242,8 +242,8 @@ export default function GroupList({
               {groupSessions.length > 0 ? (
                 <div className="space-y-4 animate-fade-in">
                   {groupSessions.map((ses) => {
-                    // Match class metrics
-                    const metrics = classMetrics.find((m) => m.sessionId === ses.id);
+                    // Match session metrics
+                    const metrics = sessionMetrics.filter((m) => m.sessionId === ses.id);
                     // Match skills practiced
                     const linkedSkillIds = sessionSkills.filter((ss) => ss.sessionId === ses.id).map((ss) => ss.skillId);
                     const practicedSkills = skills.filter((sk) => linkedSkillIds.includes(sk.id));
@@ -267,20 +267,13 @@ export default function GroupList({
                             </span>
                           </div>
 
-                          {metrics && (
+                          {metrics.length > 0 && (
                             <div className="flex flex-wrap gap-1.5">
-                              <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-700 text-[9px] font-bold rounded uppercase">
-                                Focus: {metrics.focusLevel}/5
-                              </span>
-                              <span className="px-2 py-0.5 bg-sky-50 border border-sky-100 text-sky-700 text-[9px] font-bold rounded uppercase">
-                                Engagement: {metrics.engagementLevel}/5
-                              </span>
-                              <span className="px-2 py-0.5 bg-amber-50 border border-amber-100 text-amber-700 text-[9px] font-bold rounded uppercase">
-                                Cooperation: {metrics.cooperationLevel}/5
-                              </span>
-                              <span className="px-2 py-0.5 bg-emerald-50 border border-emerald-100 text-emerald-700 text-[9px] font-bold rounded uppercase">
-                                Dynamics: {metrics.groupDynamics}/5
-                              </span>
+                              {metrics.map((m) => (
+                                <span key={m.metricId} className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-700 text-[9px] font-bold rounded uppercase">
+                                  {m.metricId.replace("m-", "").replace(/-/g, " ")}: {m.value}/5
+                                </span>
+                              ))}
                             </div>
                           )}
                         </div>
