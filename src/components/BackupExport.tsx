@@ -6,6 +6,7 @@
 import React, { useRef, useState } from "react";
 import { AppState } from "../types";
 import { Download, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Database } from "lucide-react";
+import { AppStateSchema } from "../utils/schema";
 
 interface BackupExportProps {
   appState: AppState;
@@ -96,35 +97,23 @@ export default function BackupExport({ appState, onRestoreState }: BackupExportP
       try {
         const parsed = JSON.parse(event.target?.result as string);
         
-        // Basic schema verification
-        if (
-          parsed &&
-          Array.isArray(parsed.students) &&
-          Array.isArray(parsed.groups) &&
-          Array.isArray(parsed.sessions)
-        ) {
-          const validatedState: AppState = {
-            students: parsed.students,
-            groups: parsed.groups,
-            sessions: parsed.sessions,
-            classMetrics: Array.isArray(parsed.classMetrics) ? parsed.classMetrics : [],
-            skills: Array.isArray(parsed.skills) ? parsed.skills : [],
-            sessionSkills: Array.isArray(parsed.sessionSkills) ? parsed.sessionSkills : [],
-            games: Array.isArray(parsed.games) ? parsed.games : [],
-            gameSkills: Array.isArray(parsed.gameSkills) ? parsed.gameSkills : [],
-            studentSkills: Array.isArray(parsed.studentSkills) ? parsed.studentSkills : [],
-            studentSessionNotes: Array.isArray(parsed.studentSessionNotes) ? parsed.studentSessionNotes : [],
-            monthlyReports: Array.isArray(parsed.monthlyReports) ? parsed.monthlyReports : [],
-            metrics: Array.isArray(parsed.metrics) ? parsed.metrics : [],
-            sessionMetrics: Array.isArray(parsed.sessionMetrics) ? parsed.sessionMetrics : []
-          };
-          onRestoreState(validatedState);
+        // Zod schema verification
+        const validationResult = AppStateSchema.safeParse(parsed);
+        
+        if (validationResult.success) {
+          onRestoreState(validationResult.data as AppState);
           setSuccessMsg("🎉 Database restored successfully! All tables, evaluations, skills, and student session notes are updated.");
           if (fileInputRef.current) {
             fileInputRef.current.value = "";
           }
         } else {
-          setErrorMsg("⚠️ Invalid backup file format. Make sure it contains students, groups, and sessions arrays.");
+          // Log specific schema errors for debugging
+          console.error("Backup validation failed:", validationResult.error);
+          
+          // Provide a user-friendly error message, extracting the first error if possible
+          const firstError = validationResult.error.issues[0];
+          const errorPath = firstError.path.join(".");
+          setErrorMsg(`⚠️ Invalid backup file structure. Problem near: ${errorPath || 'unknown'} - ${firstError.message}`);
         }
       } catch (err) {
         setErrorMsg("⚠️ Failed to parse JSON file. Ensure it is a valid backup file.");
@@ -211,12 +200,12 @@ export default function BackupExport({ appState, onRestoreState }: BackupExportP
             </button>
 
             <button
-              onClick={() => handleExportCSV("classMetrics", "music_class_metrics_export.csv")}
+              onClick={() => handleExportCSV("sessionMetrics", "music_session_metrics_export.csv")}
               className="w-full flex items-center justify-between p-3 border border-slate-200 hover:bg-slate-50 rounded-lg text-left transition-colors group cursor-pointer"
             >
               <div>
-                <span className="font-bold text-xs sm:text-sm text-slate-850 block">Export Class Metrics Evaluation</span>
-                <span className="text-[10px] text-slate-400 font-semibold">Contains {appState.classMetrics.length} sessions focus, engagement, dynamics, and progress ratings</span>
+                <span className="font-bold text-xs sm:text-sm text-slate-850 block">Export Session Metrics Evaluation</span>
+                <span className="text-[10px] text-slate-400 font-semibold">Contains {appState.sessionMetrics.length} dynamic metrics linked to sessions</span>
               </div>
               <Download className="w-4 h-4 text-slate-400 group-hover:text-slate-800 transition-colors" />
             </button>
